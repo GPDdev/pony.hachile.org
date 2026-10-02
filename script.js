@@ -60,7 +60,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const gifBase = 'gif/pony-town-Skyblue%20new2-';
 const actions = {
   stand: 'stand', trot: 'trot', fly: 'fly', sit: 'sit', yawn: 'yawn',
-  dance: 'dance-4', laugh: 'laugh', boop: 'boop', lie: 'lie', applause: 'applause'
+  dance: 'dance-4', danceMove: 'dance%20move%201', laugh: 'laugh', boop: 'boop', lie: 'lie', applause: 'applause'
 };
 let action = 'stand';
 let roamTimer;
@@ -103,7 +103,8 @@ function scheduleRoam(delay = 3500) {
     setAction(fly ? 'fly' : 'trot');
     movePony(nextX, nextY, duration);
     idleTimer = setTimeout(() => {
-      setAction(['stand', 'sit', 'yawn', 'dance'][Math.floor(Math.random() * 4)]);
+      const idleActions = ['stand', 'sit', 'yawn', 'dance', 'danceMove', 'laugh', 'lie', 'applause'];
+      setAction(idleActions[Math.floor(Math.random() * idleActions.length)]);
       scheduleRoam(2500 + Math.random() * 4000);
     }, duration + 100);
   }, delay);
@@ -141,6 +142,12 @@ function finishDrag(event) {
 }
 ponyButton.addEventListener('pointerup', finishDrag);
 ponyButton.addEventListener('pointercancel', finishDrag);
+ponyButton.addEventListener('click', event => {
+  if (event.detail !== 0) return;
+  stopRoam();
+  setAction('boop');
+  scheduleRoam(4500);
+});
 ponyButton.addEventListener('keydown', event => {
   const delta = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[event.key];
   if (!delta) return;

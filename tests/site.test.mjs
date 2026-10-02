@@ -14,7 +14,7 @@ test('five official tracks, page sections and pony GIFs are wired up', () => {
   for (const section of ['about', 'interests', 'worlds', 'music', 'contact']) {
     assert.match(html, new RegExp(`id="${section}"`));
   }
-  for (const state of ['stand', 'trot', 'fly', 'sit', 'yawn', 'dance-4', 'boop']) {
+  for (const state of ['stand', 'trot', 'fly', 'sit', 'yawn', 'dance-4', 'dance move 1', 'boop', 'laugh', 'lie', 'applause']) {
     assert.ok(existsSync(join(fileURLToPath(root), 'gif', `pony-town-Skyblue new2-${state}-blinking-padded-4x.gif`)), `${state} GIF missing`);
   }
 });
