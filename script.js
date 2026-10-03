@@ -64,12 +64,29 @@ const actions = {
 };
 let action = 'stand';
 let roamTimer;
-let idleTimer;
 let drag;
+let motionFrame;
+let facing = 1;
+pony.dataset.action = action;
+pony.dataset.facing = 'right';
+
+function stopMovement() {
+  cancelAnimationFrame(motionFrame);
+  motionFrame = null;
+}
+
+function faceDirection(deltaX) {
+  if (deltaX === 0) return;
+  facing = deltaX < 0 ? -1 : 1;
+  sprite.style.transform = facing === -1 ? 'scaleX(-1)' : '';
+  pony.dataset.facing = facing === -1 ? 'left' : 'right';
+}
 
 function setAction(next) {
+  if (next !== 'trot' && next !== 'fly') stopMovement();
   if (action === next) return;
   action = next;
+  pony.dataset.action = next;
   sprite.src = `${gifBase}${actions[next]}-blinking-padded-4x.gif`;
 }
 
@@ -80,46 +97,65 @@ function clampPony(x, y) {
   };
 }
 
-function movePony(x, y, duration = 0) {
+function placePony(x, y) {
   const point = clampPony(x, y);
-  pony.style.transitionDuration = `${duration}ms`;
   pony.style.left = `${point.x}px`;
   pony.style.top = `${point.y}px`;
 }
 
+function movePony(x, y, duration = 0, onArrive) {
+  stopMovement();
+  if (action !== 'trot' && action !== 'fly') return;
+  const start = pony.getBoundingClientRect();
+  const target = clampPony(x, y);
+  faceDirection(target.x - start.left);
+  if (duration === 0) {
+    placePony(target.x, target.y);
+    onArrive?.();
+    return;
+  }
+  const started = performance.now();
+  function step(now) {
+    if (action !== 'trot' && action !== 'fly') return;
+    const progress = Math.min(1, (now - started) / duration);
+    placePony(start.left + (target.x - start.left) * progress, start.top + (target.y - start.top) * progress);
+    if (progress < 1) motionFrame = requestAnimationFrame(step);
+    else { motionFrame = null; onArrive?.(); }
+  }
+  motionFrame = requestAnimationFrame(step);
+}
+
 function scheduleRoam(delay = 3500) {
   clearTimeout(roamTimer);
-  if (reduceMotion.matches || pony.classList.contains('is-hidden')) return;
+  if (drag || reduceMotion.matches || pony.classList.contains('is-hidden')) return;
   roamTimer = setTimeout(() => {
+    if (drag || reduceMotion.matches || pony.classList.contains('is-hidden')) return;
     const fly = Math.random() < .34;
     const current = pony.getBoundingClientRect();
     const nextX = 12 + Math.random() * Math.max(0, window.innerWidth - pony.offsetWidth - 24);
     const nextY = fly
       ? 70 + Math.random() * Math.max(0, window.innerHeight * .43 - pony.offsetHeight)
-      : window.innerHeight - pony.offsetHeight - 12 - Math.random() * Math.min(120, window.innerHeight * .17);
+      : current.top; // Walking stays on the current horizontal line; only flight changes height.
     const distance = Math.hypot(nextX - current.left, nextY - current.top);
     const duration = Math.max(2700, Math.min(8000, distance * 11));
-    sprite.style.transform = nextX < current.left ? 'scaleX(-1)' : '';
     setAction(fly ? 'fly' : 'trot');
-    movePony(nextX, nextY, duration);
-    idleTimer = setTimeout(() => {
+    movePony(nextX, nextY, duration, () => {
       const idleActions = ['stand', 'sit', 'yawn', 'dance', 'danceMove', 'laugh', 'lie', 'applause'];
       setAction(idleActions[Math.floor(Math.random() * idleActions.length)]);
       scheduleRoam(2500 + Math.random() * 4000);
-    }, duration + 100);
+    });
   }, delay);
 }
 
 function stopRoam() {
   clearTimeout(roamTimer);
-  clearTimeout(idleTimer);
-  const rect = pony.getBoundingClientRect();
-  movePony(rect.left, rect.top);
+  stopMovement();
 }
 
 ponyButton.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
   stopRoam();
+  setAction('stand');
   const rect = pony.getBoundingClientRect();
   drag = { id: event.pointerId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top, startX: event.clientX, startY: event.clientY, moved: false };
   ponyButton.setPointerCapture(event.pointerId);
@@ -142,6 +178,7 @@ function finishDrag(event) {
 }
 ponyButton.addEventListener('pointerup', finishDrag);
 ponyButton.addEventListener('pointercancel', finishDrag);
+ponyButton.addEventListener('lostpointercapture', finishDrag);
 ponyButton.addEventListener('click', event => {
   if (event.detail !== 0) return;
   stopRoam();
@@ -154,8 +191,8 @@ ponyButton.addEventListener('keydown', event => {
   event.preventDefault();
   stopRoam();
   const rect = pony.getBoundingClientRect();
-  movePony(rect.left + delta[0], rect.top + delta[1]);
-  setAction('trot');
+  setAction(delta[1] === 0 ? 'trot' : 'fly');
+  movePony(rect.left + delta[0], rect.top + delta[1], reduceMotion.matches ? 0 : 180, () => setAction('stand'));
   scheduleRoam(5000);
 });
 
@@ -164,12 +201,14 @@ ponyToggle.addEventListener('click', () => {
   ponyToggle.textContent = visible ? '✕' : '✦';
   ponyToggle.setAttribute('aria-pressed', String(visible));
   ponyToggle.setAttribute('aria-label', visible ? '收起桌面小马' : '召唤桌面小马');
-  if (visible) scheduleRoam(); else stopRoam();
+  if (visible) { setAction('stand'); scheduleRoam(); } else stopRoam();
 });
 
 window.addEventListener('resize', () => {
   const rect = pony.getBoundingClientRect();
-  movePony(rect.left, rect.top);
+  stopRoam();
+  placePony(rect.left, rect.top); // Re-clamp only when the viewport itself changes.
+  if (!drag) { setAction('stand'); scheduleRoam(); }
 });
 reduceMotion.addEventListener('change', () => {
   if (reduceMotion.matches) { stopRoam(); setAction('stand'); }
