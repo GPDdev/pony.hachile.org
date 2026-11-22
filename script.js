@@ -1,8 +1,8 @@
 const tracks = [
   { title: "Equestria's Finest", artist: 'Neighsayer', id: '1923097646', url: 'https://neighsayer.bandcamp.com/track/equestrias-finest-2' },
-  { title: 'Walking With Shadows', artist: 'Turquoise Splash · FritzyBeat · 4everfreebrony', id: '3823201151', url: 'https://turquoisesplash.bandcamp.com/track/walking-with-shadows-feat-fritzybeat-4everfreebrony' },
-  { title: 'Where We Belong', artist: 'Turquoise Splash · John Kenza', id: '1199042124', url: 'https://poniesatdawn.bandcamp.com/track/where-we-belong' },
-  { title: 'Loyalty (Aviators Remix)', artist: 'AcousticBrony · MandoPony · Aviators', id: '2931663848', url: 'https://soundoftheaviators.bandcamp.com/track/loyalty-aviators-remix' },
+  { title: 'Walking With Shadows', artist: 'Turquoise Splash / FritzyBeat / 4everfreebrony', id: '3823201151', url: 'https://turquoisesplash.bandcamp.com/track/walking-with-shadows-feat-fritzybeat-4everfreebrony' },
+  { title: 'Where We Belong', artist: 'Turquoise Splash / John Kenza', id: '1199042124', url: 'https://poniesatdawn.bandcamp.com/track/where-we-belong' },
+  { title: 'Loyalty (Aviators Remix)', artist: 'AcousticBrony / MandoPony / Aviators', id: '2931663848', url: 'https://soundoftheaviators.bandcamp.com/track/loyalty-aviators-remix' },
   { title: 'A Summer in the Stars', artist: 'Forest Rain', id: '2744710307', url: 'https://forestrain.bandcamp.com/track/a-summer-in-the-stars' }
 ];
 
@@ -44,7 +44,7 @@ trackButtons.forEach(button => button.addEventListener('click', () => selectTrac
 loadButton.addEventListener('click', () => {
   const track = tracks[selectedTrack];
   const frame = document.createElement('iframe');
-  frame.title = `Bandcamp 官方播放器：${track.title}`;
+  frame.title = `${document.documentElement.lang === 'en' ? 'Bandcamp player' : 'Bandcamp 官方播放器'}: ${track.title}`;
   frame.loading = 'lazy';
   frame.allow = 'autoplay; encrypted-media';
   frame.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -57,7 +57,7 @@ const ponyButton = document.querySelector('#pony-character');
 const sprite = document.querySelector('#pony-sprite');
 const ponyToggle = document.querySelector('#pony-toggle');
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const gifBase = 'gif/pony-town-Skyblue%20new2-';
+const gifBase = '/gif/pony-town-Skyblue%20new2-';
 const actions = {
   stand: 'stand', trot: 'trot', fly: 'fly', sit: 'sit', yawn: 'yawn',
   dance: 'dance-4', danceMove: 'dance%20move%201', laugh: 'laugh', boop: 'boop', lie: 'lie', applause: 'applause'
@@ -200,7 +200,8 @@ ponyToggle.addEventListener('click', () => {
   const visible = pony.classList.toggle('is-hidden') === false;
   ponyToggle.textContent = visible ? '✕' : '✦';
   ponyToggle.setAttribute('aria-pressed', String(visible));
-  ponyToggle.setAttribute('aria-label', visible ? '收起桌面小马' : '召唤桌面小马');
+  const english = document.documentElement.lang === 'en';
+  ponyToggle.setAttribute('aria-label', english ? (visible ? 'Hide pony companion' : 'Show pony companion') : (visible ? '收起桌面小马' : '召唤桌面小马'));
   if (visible) { setAction('stand'); scheduleRoam(); } else stopRoam();
 });
 
